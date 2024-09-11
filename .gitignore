@@ -45,3 +45,5 @@ out/
 *.exe
 *.out
 *.app
+
+external/
