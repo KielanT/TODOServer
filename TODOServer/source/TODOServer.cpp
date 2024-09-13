@@ -5,6 +5,7 @@
 #include <string>
 
 #include "crow.h"
+#include "crow/middlewares/cors.h"
 
 int GetCount()
 {
@@ -34,7 +35,13 @@ int main()
 {
 	std::cout << "Server started!" << std::endl;
 
-	crow::SimpleApp app;
+    crow::App<crow::CORSHandler> app;
+
+    auto& cors = app.get_middleware<crow::CORSHandler>();
+    cors.global()
+        .headers("Content-Type", "X-Custom-Header", "Upgrade-Insecure-Requests")
+        .methods("POST"_method, "GET"_method)
+        .origin("*");// TODO for security update this
 
 	CROW_ROUTE(app, "/")([]()
 		{
@@ -82,6 +89,15 @@ int main()
             count++;
             AppendCount(count);
 
+            crow::json::wvalue response;
+            response["count"] = count;
+
+            return crow::response{ response };
+        });
+
+    CROW_ROUTE(app, "/count").methods(crow::HTTPMethod::GET)([]()
+        {
+            int count = GetCount();
             crow::json::wvalue response;
             response["count"] = count;
 
