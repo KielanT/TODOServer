@@ -8,98 +8,89 @@
 #include "crow.h"
 #include "crow/middlewares/cors.h"
 
-#include "mysql_driver.h"
-#include "mysql_connection.h"
-#include "cppconn/resultset.h"
-#include "cppconn/statement.h"
+#include "MySQLManager.h"
 
-void CreateNewFile(const std::string& name = "")
-{
-    std::string fileName = name;
-
-    fileName = "stf";
-
-    if (fileName.empty())
-    {
-        std::cout << "file name is empty" << std::endl;
-        const std::string baseName = "untitled";
-        fileName = "lists/" + baseName + ".txt";
-
-        int count = 1;
-
-        while (std::filesystem::exists(fileName))
-        {
-            fileName = "lists/" + baseName + std::to_string(count) + ".txt";
-            std::cout << fileName << std::endl;
-            count++;
-        }
-    }
-    else
-    {
-        fileName = "lists/" + fileName + ".txt";
-    }
-
-   
-    std::cout << "new file = " << fileName << std::endl;
-
-    std::ofstream file(fileName);
-    if (!file)
-    {
-        std::cerr << "Error: Could not create file " << fileName << std::endl;
-    }
-    else
-    {
-        file.close();
-    }
-}
 
 int main()
 {
     std::cout << "Server started!" << std::endl;
 
     crow::App<crow::CORSHandler> app;
-    std::string email{ "hello@world.com" };
     
-    std::string SQLHostName{ "" };
-    std::string SQLPassword{ "" };
-
-    std::cout << "Enter SQL Hostname!: ";
-    std::cin >> SQLHostName;
-    std::cout << "Enter SQL Password!: "; // TODO Hide password
-    std::cin >> SQLPassword;
-
     try
     {
-        sql::mysql::MySQL_Driver* driver;
-        sql::Connection* con;
-        sql::Statement* stmt;
-        sql::ResultSet* res;
+        std::string SQLHostName{ "" };
+        std::string SQLPassword{ "" };
 
-        driver = sql::mysql::get_mysql_driver_instance();
-        con = driver->connect("tcp://127.0.0.1:3306", SQLHostName, SQLPassword); // TODO move password to console input?
-        con->setSchema("TODOListDataBase");
+        std::cout << "Enter SQL Hostname!: ";
+        std::cin >> SQLHostName;
+        std::cout << "Enter SQL Password!: "; // TODO Hide password
+        std::cin >> SQLPassword;
 
-        std::cout << "Connected to MySQL successfully!" << std::endl;
+        std::unique_ptr<MySQLManager> SQL = std::make_unique<MySQLManager>();
 
-        stmt = con->createStatement();
+        SQL->Connect("tcp://127.0.0.1:3306", SQLHostName, SQLPassword, "TODOListDataBase");
 
-        std::string query = "Select TODOList.name FROM TODOList "
-                            "JOIN Users ON TODOList.ownerID = Users.id "
-                            "WHERE Users.email = '" + email + "'";
+        auto& cors = app.get_middleware<crow::CORSHandler>();
+        cors.global()
+            .headers("Content-Type", "X-Custom-Header", "Upgrade-Insecure-Requests")
+            .methods("POST"_method, "GET"_method)
+            .origin("*");// TODO for security update this
 
-        res = stmt->executeQuery(query);
 
-        std::cout << "Todo lists for user " << email << ":" << std::endl;
-        while (res->next())
-        {
-            std::cout << res->getString("name") << std::endl;
-        }
+        //TODO create a landing page
 
-        std::cout << std::endl;
+       CROW_ROUTE(app, "/newList").methods(crow::HTTPMethod::POST)([&](const crow::request& req)
+           {
+               auto jsonData = crow::json::load(req.body);
 
-        delete res;
-        delete stmt;
-        delete con;
+               SQL->CreateList(jsonData["email"].s(), jsonData["name"].s());
+
+               crow::json::wvalue response;
+               return crow::response{ response };
+           });
+
+       CROW_ROUTE(app, "/newTask").methods(crow::HTTPMethod::POST)([&](const crow::request& req)
+           {
+               auto jsonData = crow::json::load(req.body);
+
+               SQL->CreateTask(jsonData["email"].s(), jsonData["list"].s(), jsonData["name"].s());
+
+               crow::json::wvalue response;
+               return crow::response{ response };
+           });
+
+       CROW_ROUTE(app, "/getLists").methods(crow::HTTPMethod::GET)([&](const crow::request& req)
+           {
+               auto jsonData = crow::json::load(req.body);
+
+               crow::json::wvalue response = SQL->GetLists(jsonData["email"].s());
+
+               return crow::response{ response };
+           });
+
+       CROW_ROUTE(app, "/deleteList").methods(crow::HTTPMethod::DELETE)([&](const crow::request& req)
+           {
+               auto jsonData = crow::json::load(req.body);
+
+               crow::json::wvalue response;
+               response["success"] = SQL->DeleteList(jsonData["email"].s(), jsonData["name"].s());
+              
+               return crow::response{ response };
+           });
+
+       CROW_ROUTE(app, "/deleteTask").methods(crow::HTTPMethod::DELETE)([&](const crow::request& req)
+           {
+               auto jsonData = crow::json::load(req.body);
+
+               crow::json::wvalue response;
+               response["success"] = SQL->DeleteTask(jsonData["email"].s(), jsonData["list"].s(), jsonData["name"].s());
+
+               return crow::response{ response };
+           });
+
+        app.port(5000).multithreaded().run();
+
     }
     catch (sql::SQLException& e)
     {
@@ -107,26 +98,9 @@ int main()
         return 1;
     }
 
+   
 
-
-    auto& cors = app.get_middleware<crow::CORSHandler>();
-    cors.global()
-        .headers("Content-Type", "X-Custom-Header", "Upgrade-Insecure-Requests")
-        .methods("POST"_method, "GET"_method)
-        .origin("*");// TODO for security update this
-
-
-    //TODO create a landing page
-
-    CROW_ROUTE(app, "/newList").methods(crow::HTTPMethod::POST)([]()
-        {
-            CreateNewFile();
-            
-            crow::json::wvalue response;
-            return crow::response{ response };
-        });
-
-	app.port(5000).multithreaded().run();
+   
 
 	return 0;
 }

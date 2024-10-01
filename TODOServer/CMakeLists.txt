@@ -11,7 +11,6 @@ set(MYSQLCPP_LIBRARY "/usr/lib/aarch64-linux-gnu/libmysqlcppconn.so")  # MySQL C
 
 include_directories(${MYSQL_INCLUDE_DIR} ${MYSQLCPP_INCLUDE_DIR})
 
-# Add source to this project's executable.
 add_executable (TODOServer ${SOURCES})
 
 if (CMAKE_VERSION VERSION_GREATER 3.12)
