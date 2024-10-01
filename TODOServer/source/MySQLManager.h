@@ -28,6 +28,8 @@ public:
 	bool DeleteList(const std::string& email, const std::string& name);
 	bool DeleteTask(const std::string& email, const std::string& list, const std::string& name);
 
+	void UpdateTaskComplete(const std::string& email, const std::string& list, const std::string& name, const bool& complete);
+	
 private:
 	sql::Driver* m_Driver;
 	sql::Connection* m_Connection;

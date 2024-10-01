@@ -59,7 +59,7 @@ void MySQLManager::CreateTask(const std::string& email, const std::string& list,
 
 crow::json::wvalue MySQLManager::GetLists(const std::string& email)
 {
-	std::string query = "SELECT todoTitle, taskName FROM `User Data` WHERE userEmail=?";
+	std::string query = "SELECT todoTitle, taskName, complete FROM `User Data` WHERE userEmail=?";
 	sql::PreparedStatement* statement = m_Connection->prepareStatement(query);
 	statement->setString(1, email);
 
@@ -74,6 +74,7 @@ crow::json::wvalue MySQLManager::GetLists(const std::string& email)
 	{
 		std::string currentTitle = res->getString("todoTitle");
 		std::string task = res->getString("taskName");
+		bool complete = res->getBoolean("complete");
 
 		if (title != currentTitle)
 		{
@@ -88,7 +89,11 @@ crow::json::wvalue MySQLManager::GetLists(const std::string& email)
 
 		if (!task.empty())
 		{
-			taskArray.push_back(task);
+			crow::json::wvalue taskObject;
+			taskObject["taskName"] = task;
+			taskObject["complete"] = complete;
+
+			taskArray.push_back(std::move(taskObject));
 		}
 
 	}
@@ -141,6 +146,22 @@ bool MySQLManager::DeleteTask(const std::string& email, const std::string& list,
 
 	delete statement;
 	return false;
+}
+
+void MySQLManager::UpdateTaskComplete(const std::string& email, const std::string& list, const std::string& name, const bool& complete)
+{
+	std::string query = "UPDATE Tasks SET complete=? "
+		"WHERE name =? AND ownerID = (SELECT id FROM TODOList WHERE name =? AND TODOList.ownerID = (SELECT id FROM Users WHERE email =?))";
+
+	sql::PreparedStatement* statement = m_Connection->prepareStatement(query);
+	statement->setBoolean(1, complete);
+	statement->setString(2, name);
+	statement->setString(3, list);
+	statement->setString(4, email);
+
+	statement->execute();
+
+	delete statement;
 }
 
 //try

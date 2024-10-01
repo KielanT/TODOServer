@@ -22,9 +22,9 @@ int main()
         std::string SQLHostName{ "" };
         std::string SQLPassword{ "" };
 
-        std::cout << "Enter SQL Hostname!: ";
+        std::cout << "Enter SQL Hostname: ";
         std::cin >> SQLHostName;
-        std::cout << "Enter SQL Password!: "; // TODO Hide password
+        std::cout << "Enter SQL Password: "; // TODO Hide password
         std::cin >> SQLPassword;
 
         std::unique_ptr<MySQLManager> SQL = std::make_unique<MySQLManager>();
@@ -88,6 +88,16 @@ int main()
 
                return crow::response{ response };
            });
+
+           CROW_ROUTE(app, "/updateTaskComplete").methods(crow::HTTPMethod::PATCH)([&](const crow::request& req)
+               {
+                   auto jsonData = crow::json::load(req.body);
+
+                   crow::json::wvalue response;
+                   SQL->UpdateTaskComplete(jsonData["email"].s(), jsonData["list"].s(), jsonData["name"].s(), jsonData["complete"].b());
+
+                   return crow::response{ response };
+               });
 
         app.port(5000).multithreaded().run();
 
