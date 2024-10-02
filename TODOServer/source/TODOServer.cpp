@@ -89,15 +89,27 @@ int main()
                return crow::response{ response };
            });
 
-           CROW_ROUTE(app, "/updateTaskComplete").methods(crow::HTTPMethod::PATCH)([&](const crow::request& req)
-               {
-                   auto jsonData = crow::json::load(req.body);
-
-                   crow::json::wvalue response;
-                   SQL->UpdateTaskComplete(jsonData["email"].s(), jsonData["list"].s(), jsonData["name"].s(), jsonData["complete"].b());
-
-                   return crow::response{ response };
-               });
+        CROW_ROUTE(app, "/updateTaskComplete").methods(crow::HTTPMethod::PATCH)([&](const crow::request& req)
+            {
+                auto jsonData = crow::json::load(req.body);
+        
+                crow::json::wvalue response;
+                SQL->UpdateTaskComplete(jsonData["email"].s(), jsonData["list"].s(), jsonData["name"].s(), jsonData["complete"].b());
+        
+                return crow::response{ response };
+            });
+        
+        
+        
+        CROW_ROUTE(app, "/updateTaskDesc").methods(crow::HTTPMethod::PATCH)([&](const crow::request& req)
+            {
+                auto jsonData = crow::json::load(req.body);
+                
+                crow::json::wvalue response;
+                SQL->UpdateTaskDesc(jsonData["email"].s(), jsonData["list"].s(), jsonData["name"].s(), jsonData["taskDesc"].s());
+        
+                return crow::response{ response };
+            });
 
         app.port(5000).multithreaded().run();
 

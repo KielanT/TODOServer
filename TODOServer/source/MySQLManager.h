@@ -29,6 +29,7 @@ public:
 	bool DeleteTask(const std::string& email, const std::string& list, const std::string& name);
 
 	void UpdateTaskComplete(const std::string& email, const std::string& list, const std::string& name, const bool& complete);
+	void UpdateTaskDesc(const std::string& email, const std::string& list, const std::string& name, const std::string& desc);
 	
 private:
 	sql::Driver* m_Driver;
