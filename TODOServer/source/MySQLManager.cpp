@@ -42,29 +42,14 @@ void MySQLManager::CreateUser(const std::string& id, const std::string& email, c
 	delete statement;
 }
 
-void MySQLManager::CreateList(const std::string& email, const std::string& name)
+void MySQLManager::CreateList(const std::string& id, const std::string& email, const std::string& name)
 {
 	std::string query = "INSERT INTO TODOList (ownerId, name) "
-		"VALUES((SELECT id FROM Users WHERE Users.email=?), ?)";
+		"VALUES((SELECT id FROM Users WHERE Users.gID=? AND Users.email=?), ?)";
 
 	sql::PreparedStatement* statement = m_Connection->prepareStatement(query);
 	
-	statement->setString(1, email);
-	statement->setString(2, name);
-
-	statement->execute();
-
-	delete statement;
-}
-
-void MySQLManager::CreateTask(const std::string& email, const std::string& list, const std::string& name)
-{
-	std::string query = "INSERT INTO Tasks (ownerId, name) "
-		"VALUES((SELECT id FROM TODOList WHERE name=? AND ownerId = (SELECT id FROM Users WHERE email=?)), ?)";
-
-	sql::PreparedStatement* statement = m_Connection->prepareStatement(query);
-
-	statement->setString(1, list);
+	statement->setString(1, id);
 	statement->setString(2, email);
 	statement->setString(3, name);
 
@@ -73,11 +58,29 @@ void MySQLManager::CreateTask(const std::string& email, const std::string& list,
 	delete statement;
 }
 
-crow::json::wvalue MySQLManager::GetLists(const std::string& email)
+void MySQLManager::CreateTask(const std::string& id, const std::string& email, const std::string& list, const std::string& name)
 {
-	std::string query = "SELECT todoTitle, taskName, taskDescription, complete FROM `User Data` WHERE userEmail=?";
+	std::string query = "INSERT INTO Tasks (ownerId, name) "
+		"VALUES((SELECT id FROM TODOList WHERE name=? AND ownerId = (SELECT id FROM Users WHERE email=? AND gID=?)), ?)";
+
 	sql::PreparedStatement* statement = m_Connection->prepareStatement(query);
-	statement->setString(1, email);
+
+	statement->setString(1, list);
+	statement->setString(2, email);
+	statement->setString(3, id);
+	statement->setString(4, name);
+
+	statement->execute();
+
+	delete statement;
+}
+
+crow::json::wvalue MySQLManager::GetLists(const std::string& id, const std::string& email)
+{
+	std::string query = "SELECT todoTitle, taskName, taskDescription, complete FROM `User Data` WHERE gID=? AND userEmail=?";
+	sql::PreparedStatement* statement = m_Connection->prepareStatement(query);
+	statement->setString(1, id);
+	statement->setString(2, email);
 
 	sql::ResultSet* res = statement->executeQuery();
 	std::string title{ "" };
@@ -129,14 +132,15 @@ crow::json::wvalue MySQLManager::GetLists(const std::string& email)
 	return jsonData;
 }
 
-bool MySQLManager::DeleteList(const std::string& email, const std::string& name)
+bool MySQLManager::DeleteList(const std::string& id,const std::string& email, const std::string& name)
 {
 	std::string query = "DELETE FROM TODOList "
-						"WHERE name=? AND ownerID = (SELECT id FROM Users WHERE email=?)";
+						"WHERE name=? AND ownerID = (SELECT id FROM Users WHERE email=? AND gID=?)";
 
 	sql::PreparedStatement* statement = m_Connection->prepareStatement(query);
 	statement->setString(1, name);
 	statement->setString(2, email);
+	statement->setString(3, id);
 
 	int affectedRows = statement->executeUpdate(); // TODO get delete confirmation
 
@@ -148,15 +152,16 @@ bool MySQLManager::DeleteList(const std::string& email, const std::string& name)
 	return false;
 }
 
-bool MySQLManager::DeleteTask(const std::string& email, const std::string& list, const std::string& name)
+bool MySQLManager::DeleteTask(const std::string& id, const std::string& email, const std::string& list, const std::string& name)
 {
 	std::string query = "DELETE FROM Tasks "
-		"WHERE name =? AND ownerID = (SELECT id FROM TODOList WHERE name =? AND TODOList.ownerID = (SELECT id FROM Users WHERE email =?))";
+		"WHERE name =? AND ownerID = (SELECT id FROM TODOList WHERE name =? AND TODOList.ownerID = (SELECT id FROM Users WHERE email=? AND gID=?))";
 
 	sql::PreparedStatement* statement = m_Connection->prepareStatement(query);
 	statement->setString(1, name);
 	statement->setString(2, list);
 	statement->setString(3, email);
+	statement->setString(4, id);
 
 	int affectedRows = statement->executeUpdate(); // TODO get delete confirmation
 
@@ -167,32 +172,34 @@ bool MySQLManager::DeleteTask(const std::string& email, const std::string& list,
 	return false;
 }
 
-void MySQLManager::UpdateTaskComplete(const std::string& email, const std::string& list, const std::string& name, const bool& complete)
+void MySQLManager::UpdateTaskComplete(const std::string& id, const std::string& email, const std::string& list, const std::string& name, const bool& complete)
 {
 	std::string query = "UPDATE Tasks SET complete=? "
-		"WHERE name =? AND ownerID = (SELECT id FROM TODOList WHERE name =? AND TODOList.ownerID = (SELECT id FROM Users WHERE email =?))";
+		"WHERE name =? AND ownerID = (SELECT id FROM TODOList WHERE name =? AND TODOList.ownerID = (SELECT id FROM Users WHERE email =? AND gID=?))";
 
 	sql::PreparedStatement* statement = m_Connection->prepareStatement(query);
 	statement->setBoolean(1, complete);
 	statement->setString(2, name);
 	statement->setString(3, list);
 	statement->setString(4, email);
+	statement->setString(5, id);
 
 	statement->execute();
 
 	delete statement;
 }
 
-void MySQLManager::UpdateTaskDesc(const std::string& email, const std::string& list, const std::string& name, const std::string& desc)
+void MySQLManager::UpdateTaskDesc(const std::string& id, const std::string& email, const std::string& list, const std::string& name, const std::string& desc)
 {
 	std::string query = "UPDATE Tasks SET taskDesc=? "
-		"WHERE name =? AND ownerID = (SELECT id FROM TODOList WHERE name =? AND TODOList.ownerID = (SELECT id FROM Users WHERE email =?))";
+		"WHERE name =? AND ownerID = (SELECT id FROM TODOList WHERE name =? AND TODOList.ownerID = (SELECT id FROM Users WHERE email =? AND gID=?))";
 
 	sql::PreparedStatement* statement = m_Connection->prepareStatement(query);
 	statement->setString(1, desc);
 	statement->setString(2, name);
 	statement->setString(3, list);
 	statement->setString(4, email);
+	statement->setString(5, id);
 
 	std::cout << desc;
 
@@ -201,12 +208,12 @@ void MySQLManager::UpdateTaskDesc(const std::string& email, const std::string& l
 	delete statement;
 }
 
-bool MySQLManager::DoesUserExist(const std::string& gID)
+bool MySQLManager::DoesUserExist(const std::string& id)
 {
 	bool result;
 	std::string query = "SELECT EXISTS(SELECT 1 FROM Users WHERE gID=?);";
 	sql::PreparedStatement* statement = m_Connection->prepareStatement(query);
-	statement->setString(1, gID);
+	statement->setString(1, id);
 
 	sql::ResultSet* res = statement->executeQuery();
 

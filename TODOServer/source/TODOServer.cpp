@@ -44,7 +44,7 @@ int main()
            {
                auto jsonData = crow::json::load(req.body);
 
-               SQL->CreateList(jsonData["email"].s(), jsonData["name"].s());
+               SQL->CreateList(jsonData["id"].s(), jsonData["email"].s(), jsonData["name"].s());
 
                crow::json::wvalue response;
                return crow::response{ response };
@@ -54,7 +54,7 @@ int main()
            {
                auto jsonData = crow::json::load(req.body);
 
-               SQL->CreateTask(jsonData["email"].s(), jsonData["list"].s(), jsonData["name"].s());
+               SQL->CreateTask(jsonData["id"].s(), jsonData["email"].s(), jsonData["list"].s(), jsonData["name"].s());
 
                crow::json::wvalue response;
                return crow::response{ response };
@@ -64,7 +64,7 @@ int main()
            {
                auto jsonData = crow::json::load(req.body);
 
-               crow::json::wvalue response = SQL->GetLists(jsonData["email"].s());
+               crow::json::wvalue response = SQL->GetLists(jsonData["id"].s(), jsonData["email"].s());
 
                return crow::response{ response };
            });
@@ -74,7 +74,7 @@ int main()
                auto jsonData = crow::json::load(req.body);
 
                crow::json::wvalue response;
-               response["success"] = SQL->DeleteList(jsonData["email"].s(), jsonData["name"].s());
+               response["success"] = SQL->DeleteList(jsonData["id"].s(), jsonData["email"].s(), jsonData["name"].s());
               
                return crow::response{ response };
            });
@@ -84,7 +84,7 @@ int main()
                auto jsonData = crow::json::load(req.body);
 
                crow::json::wvalue response;
-               response["success"] = SQL->DeleteTask(jsonData["email"].s(), jsonData["list"].s(), jsonData["name"].s());
+               response["success"] = SQL->DeleteTask(jsonData["id"].s(), jsonData["email"].s(), jsonData["list"].s(), jsonData["name"].s());
 
                return crow::response{ response };
            });
@@ -94,7 +94,7 @@ int main()
                 auto jsonData = crow::json::load(req.body);
         
                 crow::json::wvalue response;
-                SQL->UpdateTaskComplete(jsonData["email"].s(), jsonData["list"].s(), jsonData["name"].s(), jsonData["complete"].b());
+                SQL->UpdateTaskComplete(jsonData["id"].s(), jsonData["email"].s(), jsonData["list"].s(), jsonData["name"].s(), jsonData["complete"].b());
         
                 return crow::response{ response };
             });
@@ -106,7 +106,7 @@ int main()
                 auto jsonData = crow::json::load(req.body);
                 
                 crow::json::wvalue response;
-                SQL->UpdateTaskDesc(jsonData["email"].s(), jsonData["list"].s(), jsonData["name"].s(), jsonData["taskDesc"].s());
+                SQL->UpdateTaskDesc(jsonData["id"].s(), jsonData["email"].s(), jsonData["list"].s(), jsonData["name"].s(), jsonData["taskDesc"].s());
         
                 return crow::response{ response };
             });
