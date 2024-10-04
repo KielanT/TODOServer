@@ -26,6 +26,22 @@ bool MySQLManager::Connect(const std::string& hostname, const std::string& usern
 	return true;
 }
 
+void MySQLManager::CreateUser(const std::string& id, const std::string& email, const std::string& name)
+{
+	std::string query = "INSERT INTO Users (gID, email, userName) "
+		"VALUES(? , ? , ? )";
+
+	sql::PreparedStatement* statement = m_Connection->prepareStatement(query);
+
+	statement->setString(1, id);
+	statement->setString(2, email);
+	statement->setString(3, name);
+
+	statement->execute();
+
+	delete statement;
+}
+
 void MySQLManager::CreateList(const std::string& email, const std::string& name)
 {
 	std::string query = "INSERT INTO TODOList (ownerId, name) "
@@ -108,6 +124,7 @@ crow::json::wvalue MySQLManager::GetLists(const std::string& email)
 
 
 	delete statement;
+	delete res;
 
 	return jsonData;
 }
@@ -182,6 +199,26 @@ void MySQLManager::UpdateTaskDesc(const std::string& email, const std::string& l
 	statement->execute();
 
 	delete statement;
+}
+
+bool MySQLManager::DoesUserExist(const std::string& gID)
+{
+	bool result;
+	std::string query = "SELECT EXISTS(SELECT 1 FROM Users WHERE gID=?);";
+	sql::PreparedStatement* statement = m_Connection->prepareStatement(query);
+	statement->setString(1, gID);
+
+	sql::ResultSet* res = statement->executeQuery();
+
+	while (res->next())
+	{
+		result = res->getBoolean(1);
+	}
+
+	delete res;
+	delete statement;
+
+	return result;
 }
 
 //try

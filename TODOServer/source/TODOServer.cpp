@@ -111,8 +111,30 @@ int main()
                 return crow::response{ response };
             });
 
-        app.port(5000).multithreaded().run();
 
+        CROW_ROUTE(app, "/doesUserExist").methods(crow::HTTPMethod::GET)([&](const crow::request& req)
+            {
+                crow::json::wvalue response;
+
+                auto jsonData = crow::json::load(req.body);
+
+                response["exist"] = SQL->DoesUserExist(jsonData["gID"].s());
+
+                return crow::response{ response };
+            });
+
+        CROW_ROUTE(app, "/createUser").methods(crow::HTTPMethod::POST)([&](const crow::request& req)
+            {
+                auto jsonData = crow::json::load(req.body);
+
+                SQL->CreateUser(jsonData["id"].s(), jsonData["email"].s(), jsonData["name"].s());
+
+                // TODO respond with working or not
+                crow::json::wvalue response;
+                return crow::response{ response };
+            });
+
+        app.port(5000).multithreaded().run();
     }
     catch (sql::SQLException& e)
     {

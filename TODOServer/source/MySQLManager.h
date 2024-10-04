@@ -20,6 +20,7 @@ public:
 
 	bool Connect(const std::string& hostname, const std::string& username, const std::string& password, const std::string& database = "");
 	
+	void CreateUser(const std::string& id, const std::string& email, const std::string& name);
 	void CreateList(const std::string& email, const std::string& name);
 	void CreateTask(const std::string& email, const std::string& list, const std::string& name);
 	
@@ -30,6 +31,7 @@ public:
 
 	void UpdateTaskComplete(const std::string& email, const std::string& list, const std::string& name, const bool& complete);
 	void UpdateTaskDesc(const std::string& email, const std::string& list, const std::string& name, const std::string& desc);
+	bool DoesUserExist(const std::string& gID);
 	
 private:
 	sql::Driver* m_Driver;
