@@ -31,6 +31,7 @@ public:
 
 	void UpdateTaskComplete(const std::string& id, const std::string& email, const std::string& list, const std::string& name, const bool& complete);
 	void UpdateTaskDesc(const std::string& id, const std::string& email, const std::string& list, const std::string& name, const std::string& desc);
+	void UpdateTaskDate(const std::string& id, const std::string& email, const std::string& list, const std::string& name, const std::string& date);
 	bool DoesUserExist(const std::string& id);
 	
 private:

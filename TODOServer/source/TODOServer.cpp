@@ -111,6 +111,17 @@ int main()
                 return crow::response{ response };
             });
 
+        CROW_ROUTE(app, "/updateTaskDate").methods(crow::HTTPMethod::PATCH)([&](const crow::request& req)
+            {
+                auto jsonData = crow::json::load(req.body);
+
+                crow::json::wvalue response;
+
+                SQL->UpdateTaskDate(jsonData["id"].s(), jsonData["email"].s(), jsonData["list"].s(), jsonData["name"].s(), jsonData["date"].s());
+
+                return crow::response{ response };
+            });
+
 
         CROW_ROUTE(app, "/doesUserExist").methods(crow::HTTPMethod::GET)([&](const crow::request& req)
             {

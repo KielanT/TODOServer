@@ -77,7 +77,7 @@ void MySQLManager::CreateTask(const std::string& id, const std::string& email, c
 
 crow::json::wvalue MySQLManager::GetLists(const std::string& id, const std::string& email)
 {
-	std::string query = "SELECT todoTitle, taskName, taskDescription, complete FROM `User Data` WHERE gID=? AND userEmail=?";
+	std::string query = "SELECT todoTitle, taskName, taskDescription, complete, dueDate FROM `User Data` WHERE gID=? AND userEmail=?";
 	sql::PreparedStatement* statement = m_Connection->prepareStatement(query);
 	statement->setString(1, id);
 	statement->setString(2, email);
@@ -95,6 +95,7 @@ crow::json::wvalue MySQLManager::GetLists(const std::string& id, const std::stri
 		std::string task = res->getString("taskName");
 		bool complete = res->getBoolean("complete");
 		std::string taskDesc = res->getString("taskDescription");
+		std::string dueDate = res->getString("dueDate");
 
 		if (title != currentTitle)
 		{
@@ -113,6 +114,7 @@ crow::json::wvalue MySQLManager::GetLists(const std::string& id, const std::stri
 			taskObject["taskName"] = task;
 			taskObject["complete"] = complete;
 			taskObject["taskDescription"] = taskDesc;
+			taskObject["dueDate"] = dueDate;
 
 			taskArray.push_back(std::move(taskObject));
 		}
@@ -202,6 +204,23 @@ void MySQLManager::UpdateTaskDesc(const std::string& id, const std::string& emai
 	statement->setString(5, id);
 
 	std::cout << desc;
+
+	statement->execute();
+
+	delete statement;
+}
+
+void MySQLManager::UpdateTaskDate(const std::string& id, const std::string& email, const std::string& list, const std::string& name, const std::string& date)
+{
+	std::string query = "UPDATE Tasks SET dueDate=? "
+		"WHERE name =? AND ownerID = (SELECT id FROM TODOList WHERE name =? AND TODOList.ownerID = (SELECT id FROM Users WHERE email =? AND gID=?))";
+
+	sql::PreparedStatement* statement = m_Connection->prepareStatement(query);
+	statement->setDateTime(1, date);
+	statement->setString(2, name);
+	statement->setString(3, list);
+	statement->setString(4, email);
+	statement->setString(5, id);
 
 	statement->execute();
 
