@@ -34,8 +34,10 @@ int main()
         auto& cors = app.get_middleware<crow::CORSHandler>();
         cors.global()
             .headers("Content-Type", "X-Custom-Header", "Upgrade-Insecure-Requests")
-            .methods("POST"_method, "GET"_method)
-            .origin("*");// TODO for security update this
+            .methods("POST"_method, "GET"_method, "DELETE"_method, "OPTIONS"_method)
+            .allow_credentials()
+            .origin("http://localhost:3000");
+
 
 
         //TODO create a landing page
@@ -60,8 +62,9 @@ int main()
                return crow::response{ response };
            });
 
-       CROW_ROUTE(app, "/getLists").methods(crow::HTTPMethod::GET)([&](const crow::request& req)
+       CROW_ROUTE(app, "/getLists").methods(crow::HTTPMethod::POST)([&](const crow::request& req)
            {
+               std::cout << "Getting list " << std::endl;
                auto jsonData = crow::json::load(req.body);
 
                crow::json::wvalue response = SQL->GetLists(jsonData["id"].s(), jsonData["email"].s());
@@ -69,14 +72,31 @@ int main()
                return crow::response{ response };
            });
 
-       CROW_ROUTE(app, "/deleteList").methods(crow::HTTPMethod::DELETE)([&](const crow::request& req)
+       CROW_ROUTE(app, "/deleteList").methods(crow::HTTPMethod::DELETE, crow::HTTPMethod::OPTIONS)([&](const crow::request& req)
            {
-               auto jsonData = crow::json::load(req.body);
+               if (req.method == crow::HTTPMethod::OPTIONS)
+               {
+                   crow::response res{ 204 }; 
+                   res.add_header("Access-Control-Allow-Origin", "http://localhost:3000"); 
+                   res.add_header("Access-Control-Allow-Methods", "DELETE, OPTIONS"); 
+                   res.add_header("Access-Control-Allow-Headers", "Content-Type"); 
+                   return res;
+               }
 
+               auto jsonData = crow::json::load(req.body);
                crow::json::wvalue response;
-               response["success"] = SQL->DeleteList(jsonData["id"].s(), jsonData["email"].s(), jsonData["name"].s());
-              
-               return crow::response{ response };
+
+               bool success = SQL->DeleteList(jsonData["id"].s(), jsonData["email"].s(), jsonData["name"].s());
+
+               response["success"] = success;
+
+               crow::response res{ response };
+
+               res.add_header("Access-Control-Allow-Origin", "http://localhost:3000"); 
+               res.add_header("Access-Control-Allow-Methods", "DELETE, OPTIONS"); 
+               res.add_header("Access-Control-Allow-Headers", "Content-Type"); 
+
+               return res;
            });
 
        CROW_ROUTE(app, "/deleteTask").methods(crow::HTTPMethod::DELETE)([&](const crow::request& req)
@@ -89,8 +109,18 @@ int main()
                return crow::response{ response };
            });
 
-        CROW_ROUTE(app, "/updateTaskComplete").methods(crow::HTTPMethod::PATCH)([&](const crow::request& req)
+        CROW_ROUTE(app, "/updateTaskComplete").methods(crow::HTTPMethod::PATCH, crow::HTTPMethod::OPTIONS)([&](const crow::request& req)
             {
+
+                if (req.method == crow::HTTPMethod::OPTIONS)
+                {
+                    crow::response res{ 204 };
+                    res.add_header("Access-Control-Allow-Origin", "http://localhost:3000");
+                    res.add_header("Access-Control-Allow-Methods", "PATCH, OPTIONS");
+                    res.add_header("Access-Control-Allow-Headers", "Content-Type");
+                    return res;
+                }
+
                 auto jsonData = crow::json::load(req.body);
         
                 crow::json::wvalue response;
@@ -101,8 +131,17 @@ int main()
         
         
         
-        CROW_ROUTE(app, "/updateTaskDesc").methods(crow::HTTPMethod::PATCH)([&](const crow::request& req)
+        CROW_ROUTE(app, "/updateTaskDesc").methods(crow::HTTPMethod::PATCH, crow::HTTPMethod::OPTIONS)([&](const crow::request& req)
             {
+                if (req.method == crow::HTTPMethod::OPTIONS)
+                {
+                    crow::response res{ 204 };
+                    res.add_header("Access-Control-Allow-Origin", "http://localhost:3000");
+                    res.add_header("Access-Control-Allow-Methods", "PATCH, OPTIONS");
+                    res.add_header("Access-Control-Allow-Headers", "Content-Type");
+                    return res;
+                }
+
                 auto jsonData = crow::json::load(req.body);
                 
                 crow::json::wvalue response;
@@ -111,8 +150,17 @@ int main()
                 return crow::response{ response };
             });
 
-        CROW_ROUTE(app, "/updateTaskDate").methods(crow::HTTPMethod::PATCH)([&](const crow::request& req)
+        CROW_ROUTE(app, "/updateTaskDate").methods(crow::HTTPMethod::PATCH, crow::HTTPMethod::OPTIONS)([&](const crow::request& req)
             {
+                if (req.method == crow::HTTPMethod::OPTIONS)
+                {
+                    crow::response res{ 204 };
+                    res.add_header("Access-Control-Allow-Origin", "http://localhost:3000");
+                    res.add_header("Access-Control-Allow-Methods", "PATCH, OPTIONS");
+                    res.add_header("Access-Control-Allow-Headers", "Content-Type");
+                    return res;
+                }
+
                 auto jsonData = crow::json::load(req.body);
 
                 crow::json::wvalue response;
@@ -123,13 +171,28 @@ int main()
             });
 
 
-        CROW_ROUTE(app, "/doesUserExist").methods(crow::HTTPMethod::GET)([&](const crow::request& req)
+        CROW_ROUTE(app, "/doesUserExist").methods(crow::HTTPMethod::GET, crow::HTTPMethod::OPTIONS)([&](const crow::request& req)
             {
+                if (req.method == crow::HTTPMethod::OPTIONS)
+                {
+                    crow::response res{ 204 };
+                    res.add_header("Access-Control-Allow-Origin", "http://localhost:3000");
+                    res.add_header("Access-Control-Allow-Methods", "GET, OPTIONS");
+                    res.add_header("Access-Control-Allow-Headers", "Content-Type");
+                    return res;
+                }
+
                 crow::json::wvalue response;
 
-                auto jsonData = crow::json::load(req.body);
-
-                response["exist"] = SQL->DoesUserExist(jsonData["gID"].s());
+                auto gID = req.url_params.get("gID"); // Get gID from query parameters
+                if (gID)
+                {
+                    response["exist"] = SQL->DoesUserExist(std::string(gID));
+                }
+                else
+                {
+                    response["error"] = "gID not provided";
+                }
 
                 return crow::response{ response };
             });
